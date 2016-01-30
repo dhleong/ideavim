@@ -99,11 +99,11 @@ public class MapHandler extends CommandHandler implements VimScriptCommandHandle
             }
           }
 
-          final String rawToMapping = arguments.getRawToMapping();
-          if (VimPlugHandler.checkName(rawToMapping)) {
+          final String plugMapping = arguments.getPlugMapping();
+          if (plugMapping != null) {
             // plug mappings are never recursive
             VimPlugin.getKey().putKeyMapping(modes, arguments.getFromKeys(), null,
-                                             VimPlugHandler.forNamed(rawToMapping), false);
+                                             VimPlugHandler.forNamed(plugMapping), false);
           } else {
             VimPlugin.getKey().putKeyMapping(modes, arguments.getFromKeys(), arguments.getToKeys(),
                                              null, commandInfo.isRecursive());
@@ -245,6 +245,7 @@ public class MapHandler extends CommandHandler implements VimScriptCommandHandle
     @NotNull private final List<KeyStroke> myFromKeys;
     @NotNull private final List<KeyStroke> myToKeys;
     @NotNull private final String myRawToKeys;
+    private final boolean isPlugMapping;
 
     public CommandArguments(@NotNull Set<SpecialArgument> specialArguments, @NotNull List<KeyStroke> fromKeys,
                             @NotNull String toKeys) {
@@ -252,7 +253,13 @@ public class MapHandler extends CommandHandler implements VimScriptCommandHandle
       mySpecialArguments = specialArguments;
       myFromKeys = fromKeys;
       myRawToKeys = toKeys;
-      myToKeys = safelyParseToKeys(toKeys);
+      isPlugMapping = VimPlugHandler.checkName(toKeys);
+
+      if (isPlugMapping) {
+          myToKeys = Collections.<KeyStroke>emptyList();
+      } else {
+          myToKeys = parseKeys(toKeys);
+      }
     }
 
     @NotNull
@@ -270,24 +277,9 @@ public class MapHandler extends CommandHandler implements VimScriptCommandHandle
       return myToKeys;
     }
 
-    @NotNull
-    public String getRawToMapping() {
-      return myRawToKeys;
-    }
-
-    private static @NotNull List<KeyStroke> safelyParseToKeys(String toKeys) {
-      try {
-        return parseKeys(toKeys);
-      } catch (IllegalArgumentException e) {
-        // this is a lame way to handle <plug> mappings. In normal circumstances,
-        //  I think the exception is probably the right way to handle this,
-        //  but since this is an internal class with known usage, we can trust
-        //  this behavior
-        if (e.getMessage() == null || !StringUtil.containsIgnoreCase(e.getMessage(), "<plug>")) {
-          throw e;
-        }
-        return Collections.emptyList();
-      }
+    @Nullable
+    public String getPlugMapping() {
+      return isPlugMapping ? myRawToKeys : null;
     }
   }
 
