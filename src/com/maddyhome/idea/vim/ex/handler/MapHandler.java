@@ -20,11 +20,13 @@ package com.maddyhome.idea.vim.ex.handler;
 
 import com.intellij.openapi.actionSystem.DataContext;
 import com.intellij.openapi.editor.Editor;
+import com.intellij.openapi.ui.playback.commands.KeyStrokeMap;
 import com.intellij.openapi.util.text.StringUtil;
 import com.maddyhome.idea.vim.VimPlugin;
 import com.maddyhome.idea.vim.command.MappingMode;
 import com.maddyhome.idea.vim.ex.*;
 import com.maddyhome.idea.vim.ex.vimscript.VimScriptCommandHandler;
+import com.maddyhome.idea.vim.extension.VimPlugHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -96,8 +98,16 @@ public class MapHandler extends CommandHandler implements VimScriptCommandHandle
               throw new ExException("Unsupported map argument: " + unsupportedArgument);
             }
           }
-          VimPlugin.getKey().putKeyMapping(modes, arguments.getFromKeys(), arguments.getToKeys(), null,
-                                           commandInfo.isRecursive());
+
+          final String rawToMapping = arguments.getRawToMapping();
+          if (VimPlugHandler.checkName(rawToMapping)) {
+            // plug mappings are never recursive
+            VimPlugin.getKey().putKeyMapping(modes, arguments.getFromKeys(), null,
+                                             VimPlugHandler.forNamed(rawToMapping), false);
+          } else {
+            VimPlugin.getKey().putKeyMapping(modes, arguments.getFromKeys(), arguments.getToKeys(),
+                                             null, commandInfo.isRecursive());
+          }
           return true;
 
         }
@@ -138,8 +148,8 @@ public class MapHandler extends CommandHandler implements VimScriptCommandHandle
       }
     }
     if (fromKeys != null) {
-      final List<KeyStroke> toKeys = parseKeys(StringUtil.trimLeading(toKeysBuilder.toString()));
-      return new CommandArguments(specialArguments, fromKeys, toKeys);
+      String rawToMapping = StringUtil.trimLeading(toKeysBuilder.toString());
+      return new CommandArguments(specialArguments, fromKeys, rawToMapping);
 
     }
     return null;
@@ -234,13 +244,15 @@ public class MapHandler extends CommandHandler implements VimScriptCommandHandle
     @NotNull private final Set<SpecialArgument> mySpecialArguments;
     @NotNull private final List<KeyStroke> myFromKeys;
     @NotNull private final List<KeyStroke> myToKeys;
+    @NotNull private final String myRawToKeys;
 
     public CommandArguments(@NotNull Set<SpecialArgument> specialArguments, @NotNull List<KeyStroke> fromKeys,
-                            @NotNull List<KeyStroke> toKeys) {
+                            @NotNull String toKeys) {
 
       mySpecialArguments = specialArguments;
       myFromKeys = fromKeys;
-      myToKeys = toKeys;
+      myRawToKeys = toKeys;
+      myToKeys = safelyParseToKeys(toKeys);
     }
 
     @NotNull
@@ -256,6 +268,26 @@ public class MapHandler extends CommandHandler implements VimScriptCommandHandle
     @NotNull
     public List<KeyStroke> getToKeys() {
       return myToKeys;
+    }
+
+    @NotNull
+    public String getRawToMapping() {
+      return myRawToKeys;
+    }
+
+    private static @NotNull List<KeyStroke> safelyParseToKeys(String toKeys) {
+      try {
+        return parseKeys(toKeys);
+      } catch (IllegalArgumentException e) {
+        // this is a lame way to handle <plug> mappings. In normal circumstances,
+        //  I think the exception is probably the right way to handle this,
+        //  but since this is an internal class with known usage, we can trust
+        //  this behavior
+        if (e.getMessage() == null || !StringUtil.containsIgnoreCase(e.getMessage(), "<plug>")) {
+          throw e;
+        }
+        return Collections.emptyList();
+      }
     }
   }
 

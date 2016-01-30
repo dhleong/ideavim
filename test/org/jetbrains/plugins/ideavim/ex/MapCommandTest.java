@@ -193,14 +193,16 @@ public class MapCommandTest extends VimTestCase {
     myFixture.checkResult("bcd\n");
   }
 
-  // VIM-672 |:map|
-  public void testIgnorePlugMappings() {
-    configureByText("<caret>foo bar\n");
-    typeText(commandToKeys("map w <Plug>abc"));
-    typeText(parseKeys("w"));
-    myFixture.checkResult("foo bar\n");
-    assertOffset(4);
-  }
+  // NB: this no longer makes sense,
+  //  as we do, in fact, support <Plug> mappings.
+  //// VIM-672 |:map|
+  //public void testIgnorePlugMappings() {
+  //  configureByText("<caret>foo bar\n");
+  //  typeText(commandToKeys("map w <Plug>abc"));
+  //  typeText(parseKeys("w"));
+  //  myFixture.checkResult("foo bar\n");
+  //  assertOffset(4);
+  //}
 
   // VIM-676 |:map|
   public void testBackspaceCharacterInVimRc() {
@@ -275,5 +277,15 @@ public class MapCommandTest extends VimTestCase {
     typeText(commandToKeys("nmap <Leader>z izzz<Esc>"));
     typeText(parseKeys(",z"));
     myFixture.checkResult("zzz\n");
+  }
+
+  public void testPlugMapping() {
+    // NB: prepare the mapping BEFORE enabling
+    //  the plugin; everything should work as expected
+    configureByText("<caret>abcdefghijklmop\n");
+    typeText(commandToKeys("nmap gts <Plug>YSurround"));
+    enableExtensions("surround");
+    typeText(parseKeys("gtseb"));
+    myFixture.checkResult("(abcdefghijklmop)\n");
   }
 }

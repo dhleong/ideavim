@@ -76,11 +76,15 @@ public class VimSurroundExtension extends VimNonDisposableExtension {
 
   @Override
   protected void initOnce() {
-    putExtensionHandlerMapping(MappingMode.N, parseKeys("ys"), new YSurroundHandler(), false);
-    putExtensionHandlerMapping(MappingMode.N, parseKeys("cs"), new CSurroundHandler(), false);
-    putExtensionHandlerMapping(MappingMode.N, parseKeys("ds"), new DSurroundHandler(), false);
+    putExtensionHandlerPlugMapping(MappingMode.N,  "<Plug>YSurround", new YSurroundHandler());
+    putExtensionHandlerPlugMapping(MappingMode.N,  "<Plug>CSurround", new CSurroundHandler());
+    putExtensionHandlerPlugMapping(MappingMode.N,  "<Plug>DSurround", new DSurroundHandler());
+    putExtensionHandlerPlugMapping(MappingMode.VO, "<Plug>VSurround", new VSurroundHandler());
 
-    putExtensionHandlerMapping(MappingMode.VO, parseKeys("S"), new VSurroundHandler(), false);
+    putPlugMapping(MappingMode.N,  parseKeys("ys"), "<Plug>YSurround");
+    putPlugMapping(MappingMode.N,  parseKeys("cs"), "<Plug>CSurround");
+    putPlugMapping(MappingMode.N,  parseKeys("ds"), "<Plug>DSurround");
+    putPlugMapping(MappingMode.VO, parseKeys("S"),  "<Plug>VSurround");
   }
 
   @Nullable
@@ -125,10 +129,23 @@ public class VimSurroundExtension extends VimNonDisposableExtension {
   private static class VSurroundHandler implements VimExtensionHandler {
     @Override
     public void execute(@NotNull Editor editor, @NotNull DataContext context) {
+
+      // save the visual selection start
+      final TextRange range = VimPlugin.getMark().getVisualSelectionMarks(editor);
+      final int startOffset = range == null
+        ? -1 // this should never happen
+        : range.getStartOffset();
+
       // NB: Operator ignores SelectionType anyway
       new Operator().apply(editor, context, SelectionType.CHARACTER_WISE);
 
       // jump back to visual start
+      if (startOffset != -1) {
+        // ensure it's up correct (when running the whole
+        //  test suite, for some reason, the mark is not
+        //  correct if we don't do this)
+        VimPlugin.getMark().setMark(editor, '<', startOffset);
+      }
       executeNormal(parseKeys("`<"), editor);
 
       // leave visual mode

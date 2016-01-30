@@ -61,6 +61,20 @@ public class VimExtensionFacade {
   }
 
   /**
+   * The 'map' command for mapping &lt;Plug&gt; mappings to handlers defined in extensions.
+   * @param plugMapName The map name WITH the &lt;Plug&gt; prefix
+   */
+  public static void putExtensionHandlerPlugMapping(@NotNull Set<MappingMode> modes, @NotNull String plugMapName,
+                                                    @NotNull VimExtensionHandler extensionHandler) {
+    VimPlugHandler.registerPlugMapping(plugMapName, extensionHandler);
+  }
+
+  public static void putPlugMapping(@NotNull Set<MappingMode> modes, @NotNull List<KeyStroke> fromKeys,
+                                    @NotNull String plugMapName) {
+    VimPlugin.getKey().putKeyMapping(modes, fromKeys, null, VimPlugHandler.forNamed(plugMapName), false);
+  }
+
+  /**
    * The 'map' command for mapping keys to other keys.
    */
   public static void putKeyMapping(@NotNull Set<MappingMode> modes, @NotNull List<KeyStroke> fromKeys,
