@@ -2,10 +2,16 @@ package com.maddyhome.idea.vim.extension;
 
 import com.intellij.openapi.actionSystem.DataContext;
 import com.intellij.openapi.editor.Editor;
+import com.intellij.openapi.util.Condition;
 import com.intellij.openapi.vcs.VcsExceptionsHotFixer;
+import com.intellij.util.containers.ContainerUtil;
 import com.intellij.util.containers.HashMap;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -60,5 +66,45 @@ public class VimPlugHandler implements VimExtensionHandler {
    */
   public static boolean checkName(@NotNull String plugMappingName) {
     return plugMappingName.regionMatches(true, 0, "<plug>", 0, "<plug>".length());
+  }
+
+  public static @Nullable String extractRegisteredName(@Nullable final String sequence) {
+    if (sequence == null) {
+      return null;
+    }
+
+    if (!checkName(sequence)) {
+      return null;
+    }
+    final String withoutPlug = stripPlug(sequence);
+    if (REGISTRY.containsKey(withoutPlug)) {
+      // easy case, but probably unlikely
+      return sequence;
+    }
+
+    // NB: There could be functions like: `Func` and `FuncMore`;
+    //  `Func` would also match if our sequence was `FuncMore`,
+    //  so we have to filter down to candidates and take the
+    //  longest one
+    final List<String> candidates = ContainerUtil.filter(
+        REGISTRY.keySet(),
+        new Condition<String>() {
+      @Override
+      public boolean value(String funcName) {
+        return withoutPlug.startsWith(funcName);
+      }
+    });
+
+    if (candidates.isEmpty()) {
+      return null;
+    }
+
+    Collections.sort(candidates, new Comparator<String>() {
+      @Override
+      public int compare(String o1, String o2) {
+        return o2.length() - o1.length();
+      }
+    });
+    return "<Plug>" + candidates.get(0);
   }
 }

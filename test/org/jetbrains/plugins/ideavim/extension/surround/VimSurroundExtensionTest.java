@@ -163,17 +163,18 @@ public class VimSurroundExtensionTest extends VimTestCase {
     doTest(parseKeys("ds<"), before, after);
   }
 
-  // TODO if/when we add proper repeat support
-  //public void testRepeatDeleteSurroundParens() {
-  //  final String before =
-  //    "if ((<caret>condition)) {\n" +
-  //    "}\n";
-  //  final String after =
-  //    "if condition {\n" +
-  //    "}\n";
-  //
-  //  doTest(parseKeys("dsb."), before, after);
-  //}
+  public void testRepeatDeleteSurroundParens() {
+    enableExtensions("repeat");
+
+    final String before =
+      "if ((<caret>condition)) {\n" +
+      "}\n";
+    final String after =
+      "if condition {\n" +
+      "}\n";
+
+    doTest(parseKeys("dsb."), before, after);
+  }
 
   /* Change surroundings */
 
@@ -197,13 +198,14 @@ public class VimSurroundExtensionTest extends VimTestCase {
     doTest(parseKeys("csBb"), before, after);
   }
 
-  // TODO if/when we add proper repeat support
-  //public void testRepeatChangeSurroundingParens() {
-  //  final String before =
-  //    "foo(<caret>index)(index2) = bar;";
-  //  final String after =
-  //    "foo[index][index2] = bar;";
-  //
-  //  doTest(parseKeys("csbrE."), before, after);
-  //}
+  public void testRepeatChangeSurroundingParens() {
+    enableExtensions("repeat");
+
+    final String before =
+      "foo(<caret>index)(index2) = bar;";
+    final String after =
+      "foo[index][index2] = bar;";
+
+    doTest(parseKeys("csbrE."), before, after);
+  }
 }

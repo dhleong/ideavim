@@ -88,6 +88,7 @@
   </extensions>
 
   <extensions defaultExtensionNs="IdeaVIM">
+    <vimExtension implementation="com.maddyhome.idea.vim.extension.repeat.VimRepeat"/>
     <vimExtension implementation="com.maddyhome.idea.vim.extension.surround.VimSurroundExtension"/>
   </extensions>
 

@@ -113,13 +113,39 @@ public class VimExtensionFacade {
   }
 
   /**
+   * Exactly as {@link #executeNormal(List, Editor, DataContext)},
+   *  but ignores any registered mappings. This is similar to 'norm!'.
+   */
+  public static void executeNormalNoremap(@NotNull List<KeyStroke> keys, @NotNull Editor editor,
+                                   @NotNull DataContext context) {
+    for (KeyStroke key : keys) {
+      KeyHandler.getInstance().handleKey(editor, key, context, false);
+    }
+  }
+
+  /**
+   * Insert some queued keys that will be returned from
+   *  future calls to getKeyStroke()
+   * @param strokes
+   */
+  public static void feedKeys(@NotNull Editor editor, @NotNull List<KeyStroke> strokes) {
+    // FIXME we really need a separate model; this could
+    //  overwrite other pending strokes
+    TestInputModel.getInstance(editor).setKeyStrokes(strokes);
+  }
+
+  /**
    * Returns a single key stroke from the user input similar to 'getchar()'.
    */
   @NotNull
   public static KeyStroke getKeyStroke(@NotNull Editor editor) {
     final KeyStroke key;
+    final KeyStroke pending;
     if (ApplicationManager.getApplication().isUnitTestMode()) {
       key = TestInputModel.getInstance(editor).nextKeyStroke();
+    }
+    else if (null != (pending = TestInputModel.getInstance(editor).nextKeyStroke())) {
+      return pending;
     }
     else {
       final Ref<KeyStroke> ref = Ref.create();

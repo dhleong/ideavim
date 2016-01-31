@@ -30,6 +30,7 @@ import com.maddyhome.idea.vim.common.Mark;
 import com.maddyhome.idea.vim.common.TextRange;
 import com.maddyhome.idea.vim.extension.VimExtensionHandler;
 import com.maddyhome.idea.vim.extension.VimNonDisposableExtension;
+import com.maddyhome.idea.vim.extension.repeat.VimRepeat;
 import com.maddyhome.idea.vim.group.ChangeGroup;
 import com.maddyhome.idea.vim.key.OperatorFunction;
 import org.jetbrains.annotations.NotNull;
@@ -177,6 +178,11 @@ public class VimSurroundExtension extends VimNonDisposableExtension {
       }
 
       change(editor, charFrom, newSurround);
+
+      if (charTo != 't' && charTo != '<') {
+        VimRepeat.set("<Plug>CSurround" + charFrom + charTo);
+      }
+      // TODO Repeat needs to support feeding keys to input()
     }
 
     static void change(@NotNull Editor editor, char charFrom, @Nullable Pair<String, String> newSurround) {
@@ -260,6 +266,7 @@ public class VimSurroundExtension extends VimNonDisposableExtension {
       }
 
       CSurroundHandler.change(editor, charFrom, null);
+      VimRepeat.set("<Plug>DSurround" + charFrom);
     }
   }
 
