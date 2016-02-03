@@ -133,7 +133,6 @@ public class VimSurroundExtension extends VimNonDisposableExtension {
       }
 
       final int start = visualRange.getStartOffset();
-      System.out.println("Visual start=" + start);
 
       // NB: Operator ignores SelectionType anyway
       new Operator().apply(editor, context, SelectionType.CHARACTER_WISE);
