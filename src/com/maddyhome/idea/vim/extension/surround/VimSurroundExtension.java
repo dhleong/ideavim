@@ -31,6 +31,7 @@ import com.maddyhome.idea.vim.common.TextRange;
 import com.maddyhome.idea.vim.extension.VimExtensionHandler;
 import com.maddyhome.idea.vim.extension.VimNonDisposableExtension;
 import com.maddyhome.idea.vim.group.ChangeGroup;
+import com.maddyhome.idea.vim.helper.EditorHelper;
 import com.maddyhome.idea.vim.key.OperatorFunction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -124,14 +125,38 @@ public class VimSurroundExtension extends VimNonDisposableExtension {
   private static class VSurroundHandler implements VimExtensionHandler {
     @Override
     public void execute(@NotNull Editor editor, @NotNull DataContext context) {
+
+      TextRange visualRange = VimPlugin.getMark().getVisualSelectionMarks(editor);
+      if (visualRange == null) {
+        // presumably we've already left visual mode
+        return;
+      }
+
+      final int start = visualRange.getStartOffset();
+      System.out.println("Visual start=" + start);
+
       // NB: Operator ignores SelectionType anyway
       new Operator().apply(editor, context, SelectionType.CHARACTER_WISE);
 
-      // jump back to visual start
-      executeNormal(parseKeys("`<"), editor);
-
       // leave visual mode
-      executeNormal(parseKeys("<Esc>"), editor);
+      executeNormal(parseKeys("<Esc>"), editor, context);
+
+      // store the old mark
+      Mark oldMark = VimPlugin.getMark().getMark(editor, 'z');
+      final int oldMarkOffset;
+      if (oldMark == null) {
+        oldMarkOffset = 0;
+      } else {
+        int lineStart = EditorHelper.getLineStartOffset(editor, oldMark.getLogicalLine());
+        oldMarkOffset = lineStart + oldMark.getCol();
+      }
+
+      // jump to the mark, and restore the original value.
+      //  I would be very happy to know that there's a cleaner
+      //  way to do this
+      VimPlugin.getMark().setMark(editor, 'z', start);
+      executeNormal(parseKeys("`z"), editor);
+      VimPlugin.getMark().setMark(editor, 'z', oldMarkOffset);
     }
   }
 
